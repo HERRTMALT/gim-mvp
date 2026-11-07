@@ -1,6 +1,6 @@
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 import { parseCookie } from 'cookie';
-import { env, isProduction, ownerPassword, ownerPasswordHash } from '../../config/env';
+import { cookieSecure, env, ownerPassword, ownerPasswordHash } from '../../config/env';
 import { safeCompare, verifyPassword } from './password';
 
 export const SESSION_COOKIE = 'gym_session';
@@ -66,7 +66,7 @@ export function sessionCookieOptions() {
   return {
     httpOnly: true,
     sameSite: 'lax' as const,
-    secure: isProduction,
+    secure: cookieSecure,
     path: '/',
     maxAge: SESSION_DURATION_MS,
   };

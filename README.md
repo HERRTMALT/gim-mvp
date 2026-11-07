@@ -62,6 +62,51 @@ npm run dev
 
 La base se guarda por defecto en `./data/gym.sqlite`. El servidor aplica migraciones y carga el catálogo al iniciar, así que `db:setup` solo es necesario la primera vez o para recrear datos iniciales.
 
+## Docker
+
+El proyecto incluye un `Dockerfile` multi-stage: compila el cliente y el servidor, elimina las dependencias de desarrollo y deja una imagen final con Node en modo producción.
+
+```bash
+docker build -t gimnasio-mvp .
+
+docker run -d --name gimnasio \
+  -p 3000:3000 \
+  -v gimnasio-data:/app/data \
+  -e SESSION_SECRET="$(openssl rand -hex 32)" \
+  -e OWNER_PASSWORD_HASH='scrypt$...' \
+  -e GYM_NAME="Mi Gimnasio" \
+  -e COOKIE_SECURE=false \
+  gimnasio-mvp
+```
+
+Abrí <http://localhost:3000>. La base SQLite queda en el volumen `gimnasio-data` y el contenedor aplica migraciones y seed automáticamente al iniciar.
+
+- `COOKIE_SECURE=false` es solo para acceder por **HTTP local**. Si publicás la app con HTTPS, quitá esa variable para que la cookie use `Secure` (valor por defecto en producción).
+- Generá `OWNER_PASSWORD_HASH` con `npm run hash-password -- "tu-contraseña"`. También se puede usar `OWNER_PASSWORD`, aunque no es lo recomendado.
+- Si accedés desde otro dominio o IP, configurá `APP_URL` con ese origen (por ejemplo `APP_URL=https://gimnasio.example.com`).
+- Para inspeccionar la imagen: `docker logs -f gimnasio` y `docker inspect --format '{{.State.Health.Status}}' gimnasio`.
+
+Con Docker Compose podés guardar esas variables en un archivo y levantar todo con:
+
+```yaml
+services:
+  gimnasio:
+    build: .
+    ports:
+      - "3000:3000"
+    env_file: .env
+    environment:
+      DATABASE_PATH: /app/data/gym.sqlite
+      APP_URL: http://localhost:3000
+      COOKIE_SECURE: "false"
+    volumes:
+      - gimnasio-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  gimnasio-data:
+```
+
 ## Variables de entorno
 
 | Variable | Obligatoria | Descripción |
@@ -72,6 +117,7 @@ La base se guarda por defecto en `./data/gym.sqlite`. El servidor aplica migraci
 | `PORT` | No | Puerto del servidor. Por defecto `3000`. |
 | `APP_URL` | No | URL del cliente para validar el origen de escrituras. Por defecto `http://localhost:5173`. |
 | `DATABASE_PATH` | No | Ruta del archivo SQLite. Por defecto `./data/gym.sqlite`. |
+| `COOKIE_SECURE` | No | `true`/`false`. Fuerza si la cookie de sesión requiere HTTPS. Por defecto es `true` en producción. |
 | `GYM_NAME` | No | Nombre que se muestra en el panel y la marca. |
 | `GYM_PHONE` | No | Teléfono del gimnasio. |
 | `GYM_ADDRESS` | No | Dirección del gimnasio. |
