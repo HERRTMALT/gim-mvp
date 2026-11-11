@@ -72,8 +72,15 @@ export function createApp() {
     });
   });
 
-  const clientDir = join(process.cwd(), 'dist/client');
-  if (existsSync(clientDir)) {
+  // `public/` es la salida del build del cliente (y la carpeta que sirve
+  // Vercel como CDN). `dist/client` se mantiene como compatibilidad con
+  // instalaciones viejas.
+  const clientDir = [
+    join(process.cwd(), 'public'),
+    join(process.cwd(), 'dist/client'),
+  ].find((directory) => existsSync(directory));
+
+  if (clientDir) {
     app.use(express.static(clientDir, { index: false }));
     app.use((request, response, next) => {
       if (request.method !== 'GET' || request.path.startsWith('/api')) {

@@ -1,6 +1,5 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { db, execute, queryAll, transaction } from './index';
+import { MIGRATIONS } from './migrations.generated';
 
 type AppliedMigration = { version: string };
 
@@ -12,22 +11,16 @@ export function runMigrations(): void {
     );
   `);
 
-  const directory = join(process.cwd(), 'migrations');
-  const files = readdirSync(directory)
-    .filter((file) => file.endsWith('.sql'))
-    .sort();
-
   const applied = new Set(
     queryAll<AppliedMigration>('SELECT version FROM schema_migrations').map((row) => row.version),
   );
 
-  for (const file of files) {
-    if (applied.has(file)) continue;
-    const sql = readFileSync(join(directory, file), 'utf8');
+  for (const migration of MIGRATIONS) {
+    if (applied.has(migration.version)) continue;
     transaction(() => {
-      db.exec(sql);
-      execute('INSERT INTO schema_migrations (version) VALUES (?)', [file]);
+      db.exec(migration.sql);
+      execute('INSERT INTO schema_migrations (version) VALUES (?)', [migration.version]);
     });
-    console.log(`Migración aplicada: ${file}`);
+    console.log(`Migración aplicada: ${migration.version}`);
   }
 }

@@ -4,6 +4,10 @@ import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // Vercel sirve los archivos estáticos desde `public/` (los que genera el
+  // build del cliente). Desactivamos el `publicDir` de Vite para evitar que
+  // intente copiar `public/` sobre sí mismo.
+  publicDir: false,
   server: {
     port: 5173,
     proxy: {
@@ -14,7 +18,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: 'dist/client',
+    outDir: 'public',
     emptyOutDir: true,
   },
 });

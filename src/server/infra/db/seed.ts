@@ -8,6 +8,17 @@ const PLANS = [
 ];
 
 export function seedDatabase(): void {
+  // En serverless el seed corre en cada cold start. Si el catálogo ya está
+  // completo no hace falta volver a escribir 59 ejercicios.
+  const existing = queryOne<{ plans: number; exercises: number }>(
+    `SELECT
+       (SELECT COUNT(*) FROM plans) AS plans,
+       (SELECT COUNT(*) FROM exercises) AS exercises`,
+  );
+  if ((existing?.plans ?? 0) >= PLANS.length && (existing?.exercises ?? 0) >= EXERCISES.length) {
+    return;
+  }
+
   transaction(() => {
     for (const plan of PLANS) {
       execute(

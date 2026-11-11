@@ -10,6 +10,7 @@ export default defineConfig({
   tsconfig: 'tsconfig.json',
   removeNodeProtocol: false,
   external: [
+    'libsql',
     'express',
     'zod',
     'dotenv',

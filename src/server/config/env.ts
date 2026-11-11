@@ -7,6 +7,9 @@ const envSchema = z
     PORT: z.coerce.number().int().min(1).max(65535).default(3000),
     APP_URL: z.string().min(1).default('http://localhost:5173'),
     DATABASE_PATH: z.string().min(1).default('./data/gym.sqlite'),
+    // Base remota libSQL/Turso. Obligatoria en Vercel (filesystem efímero).
+    TURSO_DATABASE_URL: z.string().url().optional(),
+    TURSO_AUTH_TOKEN: z.string().min(1).optional(),
     COOKIE_SECURE: z.enum(['true', 'false']).optional(),
     SESSION_SECRET: z.string().min(32, 'SESSION_SECRET debe tener al menos 32 caracteres'),
     OWNER_PASSWORD_HASH: z.string().optional(),
@@ -20,6 +23,15 @@ const envSchema = z
   .refine((value) => Boolean(value.OWNER_PASSWORD_HASH || value.OWNER_PASSWORD), {
     message: 'Configurá OWNER_PASSWORD_HASH o OWNER_PASSWORD',
     path: ['OWNER_PASSWORD'],
+  })
+  .refine((value) => !value.TURSO_DATABASE_URL || Boolean(value.TURSO_AUTH_TOKEN), {
+    message: 'Si usás TURSO_DATABASE_URL también tenés que configurar TURSO_AUTH_TOKEN',
+    path: ['TURSO_AUTH_TOKEN'],
+  })
+  .refine((value) => !process.env.VERCEL || Boolean(value.TURSO_DATABASE_URL), {
+    message:
+      'En Vercel el filesystem es efímero: configurá TURSO_DATABASE_URL y TURSO_AUTH_TOKEN (https://turso.tech)',
+    path: ['TURSO_DATABASE_URL'],
   });
 
 const parsed = envSchema.safeParse(process.env);

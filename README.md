@@ -107,6 +107,42 @@ volumes:
   gimnasio-data:
 ```
 
+## Despliegue en Vercel
+
+Vercel ejecuta la app como una función serverless. Eso tiene dos consecuencias:
+
+1. El servidor Express **no** puede escuchar en un puerto propio: Vercel detecta el
+   entrypoint `src/index.ts` y monta la app como función.
+2. El filesystem es de solo lectura y efímero. **SQLite local no sirve** en Vercel:
+   `./data/gym.sqlite` no se puede escribir y los datos se perderían entre
+   invocaciones. Por eso la app usa una base libSQL/Turso remota cuando existe
+   `TURSO_DATABASE_URL`.
+
+Pasos:
+
+1. Creá una base gratis en [turso.tech](https://turso.tech) y copiá la URL y el token:
+   ```bash
+   turso db create gimnasio
+   turso db show gimnasio --url
+   turso db tokens create gimnasio
+   ```
+2. En **Vercel → Project → Settings → Environment Variables** configurá:
+   - `SESSION_SECRET` (mínimo 32 caracteres; podés generarlo con `openssl rand -hex 32`)
+   - `OWNER_PASSWORD` o `OWNER_PASSWORD_HASH`
+   - `TURSO_DATABASE_URL` (`libsql://...`)
+   - `TURSO_AUTH_TOKEN`
+   - `APP_URL` con la URL pública, por ejemplo `https://gim-mvp-kla6.vercel.app`
+   - Opcionales: `GYM_NAME`, `GYM_PHONE`, `GYM_ADDRESS`, `TZ`
+3. Hacé un nuevo deploy. El proyecto incluye `vercel.json` con el framework
+   `express`, el build del cliente y la regla SPA.
+
+El build genera el cliente en `public/` (Vercel lo sirve como CDN) y el servidor
+en `dist/server/`. Las migraciones se embeben en el bundle al compilar
+(`npm run migrations:generate`), así que no dependen de archivos externos.
+
+> Si preferís seguir usando SQLite en un disco persistente, desplegá con Docker
+> en Railway, Render, Fly.io o un VPS. En ese caso no hace falta Turso.
+
 ## Variables de entorno
 
 | Variable | Obligatoria | Descripción |
@@ -115,8 +151,10 @@ volumes:
 | `OWNER_PASSWORD_HASH` | Una de las dos | Hash `scrypt` de la contraseña. **Recomendado en producción.** |
 | `OWNER_PASSWORD` | Una de las dos | Contraseña en texto plano. Práctica para desarrollo. |
 | `PORT` | No | Puerto del servidor. Por defecto `3000`. |
-| `APP_URL` | No | URL del cliente para validar el origen de escrituras. Por defecto `http://localhost:5173`. |
+| `APP_URL` | No | URL del cliente para validar el origen de escrituras. Por defecto `http://localhost:5173`. En Vercel debe ser la URL pública. |
 | `DATABASE_PATH` | No | Ruta del archivo SQLite. Por defecto `./data/gym.sqlite`. |
+| `TURSO_DATABASE_URL` | En Vercel | URL `libsql://...` de una base Turso. Reemplaza a `DATABASE_PATH`. |
+| `TURSO_AUTH_TOKEN` | En Vercel | Token de acceso de la base Turso. |
 | `COOKIE_SECURE` | No | `true`/`false`. Fuerza si la cookie de sesión requiere HTTPS. Por defecto es `true` en producción. |
 | `GYM_NAME` | No | Nombre que se muestra en el panel y la marca. |
 | `GYM_PHONE` | No | Teléfono del gimnasio. |
@@ -146,10 +184,11 @@ Copiá la línea `OWNER_PASSWORD_HASH=...` en `.env`, eliminá `OWNER_PASSWORD` 
 | `npm run hash-password -- "clave"` | Genera un hash `scrypt` para `.env`. |
 | `npm run typecheck` | Chequeo de tipos. |
 | `npm test` | Tests unitarios y de API con Vitest. |
-| `npm run build` | Compila cliente y servidor en `dist/`. |
+| `npm run build` | Compila el cliente en `public/` y el servidor en `dist/server/`. |
+| `npm run migrations:generate` | Embebe las migraciones SQL en `src/server/infra/db/migrations.generated.ts`. |
 | `npm start` | Sirve la app compilada desde Express. |
 
-En producción, `npm start` sirve tanto la API como el cliente compilado. Antes de iniciar:
+En producción, `npm start` sirve tanto la API como el cliente compilado desde `public/`. Antes de iniciar:
 
 ```bash
 npm run build
