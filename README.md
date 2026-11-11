@@ -112,7 +112,9 @@ volumes:
 Vercel ejecuta la app como una función serverless. Eso tiene dos consecuencias:
 
 1. El servidor Express **no** puede escuchar en un puerto propio: Vercel detecta el
-   entrypoint `src/index.ts` y monta la app como función.
+   entrypoint `server.js` y monta la app como función. Ese archivo reexporta el
+   bundle ya compilado en `dist/vercel/` (tsup), para que el runtime serverless no
+   tenga que compilar TypeScript ni resolver imports sin extensión.
 2. El filesystem es de solo lectura y efímero. **SQLite local no sirve** en Vercel:
    `./data/gym.sqlite` no se puede escribir y los datos se perderían entre
    invocaciones. Por eso la app usa una base libSQL/Turso remota cuando existe
@@ -132,13 +134,21 @@ Pasos:
    - `TURSO_DATABASE_URL` (`libsql://...`)
    - `TURSO_AUTH_TOKEN`
    - `APP_URL` con la URL pública, por ejemplo `https://gim-mvp-kla6.vercel.app`
-   - Opcionales: `GYM_NAME`, `GYM_PHONE`, `GYM_ADDRESS`, `TZ`
+   - Opcionales: `GYM_NAME`, `GYM_PHONE`, `GYM_ADDRESS`, `APP_TZ`
 3. Hacé un nuevo deploy. El proyecto incluye `vercel.json` con el framework
    `express`, el build del cliente y la regla SPA.
 
 El build genera el cliente en `public/` (Vercel lo sirve como CDN) y el servidor
-en `dist/server/`. Las migraciones se embeben en el bundle al compilar
-(`npm run migrations:generate`), así que no dependen de archivos externos.
+en `dist/server/` y `dist/vercel/`. Las migraciones se embeben en el bundle al
+compilar (`npm run migrations:generate`), así que no dependen de archivos externos.
+
+`vercel.json` incluye `node_modules/@libsql/**`, `node_modules/pdfkit/**` y
+`public/**` en el bundle de la función. Sin esos archivos, la base Turso, el PDF
+de rutinas o el fallback SPA fallan en producción.
+
+> `TZ` es una variable reservada por Vercel (el runtime la define como `TZ=:UTC`).
+> Para cambiar la zona horaria usá `APP_TZ`; si no se define, se usa
+> `America/Argentina/Buenos_Aires`.
 
 > Si preferís seguir usando SQLite en un disco persistente, desplegá con Docker
 > en Railway, Render, Fly.io o un VPS. En ese caso no hace falta Turso.
@@ -159,7 +169,8 @@ en `dist/server/`. Las migraciones se embeben en el bundle al compilar
 | `GYM_NAME` | No | Nombre que se muestra en el panel y la marca. |
 | `GYM_PHONE` | No | Teléfono del gimnasio. |
 | `GYM_ADDRESS` | No | Dirección del gimnasio. |
-| `TZ` | No | Zona horaria de las fechas. Por defecto `America/Argentina/Buenos_Aires`. |
+| `TZ` | No | Zona horaria del proceso. En Vercel es reservada (`:UTC`), por eso se sanea. |
+| `APP_TZ` | No | Zona horaria de las fechas. Tiene prioridad sobre `TZ`. Por defecto `America/Argentina/Buenos_Aires`. |
 | `LOG_LEVEL` | No | Nivel de logs de pino. Por defecto `info`. |
 | `NODE_ENV` | No | `development`, `test` o `production`. |
 

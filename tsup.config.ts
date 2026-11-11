@@ -1,11 +1,8 @@
-import { defineConfig } from 'tsup';
+import { defineConfig, type Options } from 'tsup';
 
-export default defineConfig({
-  entry: ['src/server/index.ts'],
+const shared: Options = {
   format: ['esm'],
   target: 'node22',
-  outDir: 'dist/server',
-  clean: true,
   sourcemap: true,
   tsconfig: 'tsconfig.json',
   removeNodeProtocol: false,
@@ -24,4 +21,20 @@ export default defineConfig({
     '@react-pdf/renderer',
     'date-fns',
   ],
-});
+};
+
+export default defineConfig([
+  {
+    ...shared,
+    entry: ['src/server/index.ts'],
+    outDir: 'dist/server',
+    clean: true,
+  },
+  {
+    // Bundle que consume el entrypoint `server.js` de Vercel.
+    ...shared,
+    entry: { index: 'src/vercel.ts' },
+    outDir: 'dist/vercel',
+    clean: true,
+  },
+]);

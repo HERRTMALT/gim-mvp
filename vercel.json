@@ -3,8 +3,8 @@
   "framework": "express",
   "buildCommand": "npm run build",
   "functions": {
-    "src/index.ts": {
-      "includeFiles": "node_modules/@libsql/**"
+    "server.js": {
+      "includeFiles": "{node_modules/@libsql/**,node_modules/pdfkit/**,public/**}"
     }
   },
   "rewrites": [

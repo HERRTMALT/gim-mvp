@@ -1,9 +1,32 @@
 import { addDays, addMonths, format, startOfMonth } from 'date-fns';
 import { env } from '../config/env';
 
+const FALLBACK_TIME_ZONE = 'America/Argentina/Buenos_Aires';
+
+// Vercel expone `TZ=:UTC` (o valores no soportados por Intl), lo que rompe
+// `Intl.DateTimeFormat`. Validamos una sola vez y caemos al default.
+function resolveTimeZone(): string {
+  const candidates = [env.APP_TZ, env.TZ, FALLBACK_TIME_ZONE];
+
+  for (const candidate of candidates) {
+    const value = candidate?.replace(/^:/, '').trim();
+    if (!value) continue;
+    try {
+      new Intl.DateTimeFormat('en-US', { timeZone: value });
+      return value;
+    } catch {
+      // Probamos el siguiente candidato.
+    }
+  }
+
+  return FALLBACK_TIME_ZONE;
+}
+
+const TIME_ZONE = resolveTimeZone();
+
 export function today(): string {
   return new Intl.DateTimeFormat('en-CA', {
-    timeZone: env.TZ,
+    timeZone: TIME_ZONE,
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',

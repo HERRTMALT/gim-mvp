@@ -17,7 +17,13 @@ const envSchema = z
     GYM_NAME: z.string().min(1).default('Gimnasio'),
     GYM_PHONE: z.string().optional().default(''),
     GYM_ADDRESS: z.string().optional().default(''),
-    TZ: z.string().default('America/Argentina/Buenos_Aires'),
+    // Vercel define `TZ=:UTC` en el runtime y no permite sobreescribirla desde
+    // el dashboard, por eso el prefijo `:` se limpia y `APP_TZ` tiene prioridad.
+    TZ: z
+      .string()
+      .default('America/Argentina/Buenos_Aires')
+      .transform((value) => value.replace(/^:/, '').trim() || 'America/Argentina/Buenos_Aires'),
+    APP_TZ: z.string().optional(),
     LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
   })
   .refine((value) => Boolean(value.OWNER_PASSWORD_HASH || value.OWNER_PASSWORD), {
