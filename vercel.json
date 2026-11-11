@@ -4,11 +4,7 @@
   "buildCommand": "npm run build",
   "functions": {
     "src/index.ts": {
-      "includeFiles": [
-        "node_modules/@libsql/**",
-        "node_modules/@neon-rs/**",
-        "node_modules/detect-libc/**"
-      ]
+      "includeFiles": "node_modules/@libsql/**"
     }
   },
   "rewrites": [
