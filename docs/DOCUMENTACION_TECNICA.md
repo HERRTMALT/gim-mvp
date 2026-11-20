@@ -340,20 +340,21 @@ flowchart TB
 
 ```mermaid
 flowchart LR
-    U["Socio / Belén"] --> CF["Cloudflare<br/>DNS + CDN gratuito"]
-    CF --> VPS["Hetzner CAX21<br/>4 vCPU ARM / 8 GB RAM"]
-    subgraph VPS
+    subgraph SERVIDOR["Hetzner CAX21 · 4 vCPU ARM / 8 GB RAM"]
         NG["NGINX :443<br/>Let's Encrypt"]
         API["Express :3000<br/>Node 22"]
         PG[("PostgreSQL")]
-        CRON["cron: pg_dump diario"]
+        CRON["cron · pg_dump diario"]
     end
+
+    U["Socio / Belén"] --> CF["Cloudflare<br/>DNS + CDN gratuito"]
+    CF --> NG
     NG -->|"estáticos"| WEB["Build del cliente"]
     NG -->|"/api"| API
     API --> PG
     PG -.-> CRON
     CRON -->|"gzip + age"| SB["Hetzner Storage Box 1 TB"]
-    API -->|"SMTP"| BR["Brevo (300 emails/día gratis)"]
+    API -->|"SMTP"| BR["Brevo · 300 emails por día"]
 ```
 
 **Racional:** con 100 cuentas y concurrencia baja, un VPS de 8 GB sobra. NGINX hace terminación TLS, sirve el build del cliente y redirige `/api`. Cloudflare se pone delante solo para cachear estáticos y mitigar la latencia desde Argentina (~200 ms al server de Europa). Se elimina Vercel y Supabase.
