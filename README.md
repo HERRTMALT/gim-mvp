@@ -6,6 +6,7 @@ Sistema de gestión para un gimnasio pequeño, pensado para usarse desde tablet 
 - **Sin facturación ni pagos:** el sistema registra la cuota y su vencimiento, no procesa cobros.
 - **Sin roles ni empleados:** hay un único nivel de acceso.
 - **Interfaz en español**, responsive para tablet y escritorio.
+- **Documentación detallada:** [Guía de funcionamiento, arquitectura y operación](docs/GUIA_DE_OPERACION_Y_ARQUITECTURA.md): explicación de cada parte del proyecto, el porqué de cada dependencia y los protocolos para ejecutarlo y detenerlo en local, Docker y Vercel.
 
 ## Funcionalidad
 
@@ -19,7 +20,7 @@ Sistema de gestión para un gimnasio pequeño, pensado para usarse desde tablet 
 
 ## Stack
 
-- **Servidor:** Node.js 22+, TypeScript, Express 5, Zod, SQLite mediante `node:sqlite` (incluido en Node, sin módulos nativos).
+- **Servidor:** Node.js 22+, TypeScript, Express 5, Zod, SQLite/libSQL mediante `libsql` (archivo local en desarrollo/Docker, Turso remoto en Vercel, sin ORM).
 - **Cliente:** React 19, Vite 8, Tailwind CSS 4, React Router 7, TanStack Query, React Hook Form, Sonner y lucide-react.
 - **PDF:** `@react-pdf/renderer` (sin Chromium).
 - **Autenticación:** cookie `httpOnly` firmada con HMAC; contraseña validada contra `.env`, con soporte para hash `scrypt`.
